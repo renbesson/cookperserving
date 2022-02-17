@@ -4,6 +4,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useContext, useState } from "react";
 import { deleteFromStorage, deleteFromFirestore } from "../lib/sharedFunctions";
 import { UserContext } from "../lib/userContext";
+import { GlobalContext } from "../lib/globalState/globalContext";
 
 const cardStyle = {
   width: 300,
@@ -21,6 +22,7 @@ const fabStyle = {
 
 export default function IngredientCard({ ingredient }) {
   const { loadingUser, user } = useContext(UserContext);
+  const { state, enableSnackbar } = useContext(GlobalContext);
   const [toggleDeleteBtn, setToggleDeleteBtn] = useState(false);
 
   const handleDelete = async () => {
@@ -28,8 +30,10 @@ export default function IngredientCard({ ingredient }) {
     await deleteFromFirestore(
       `users/${user.uid}/ingredients`,
       ingredient.uid
-    ).then(console.log);
+    ).then((snackbar) => enableSnackbar(snackbar));
   };
+
+  console.log(state);
 
   return (
     <Grid item>
