@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -8,12 +8,11 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import CustomSnackbar from "../components/CustomSnackbar";
 
 import { customAlphabet } from "nanoid";
 import FileInput from "../components/FileInput";
-import { addToFirestore, addToStorage } from "../lib/sharedFunctions";
-import { useUserData } from "../customHooks/useUserData";
+import { addToFirestore, addToStorage, getURL } from "../lib/sharedFunctions";
+import { useSnackbar } from "notistack";
 
 const theme = createTheme();
 
@@ -27,43 +26,59 @@ const initialValue = {
 };
 
 export default function AddIngredient({ userData }) {
-  const { loadingUser, user } = userData;
+  const { user } = userData;
   const [newUid, setNewUid] = useState(nanoid());
   const [ingredient, setIngredient] = useState(initialValue);
-  const [snackbar, setSnackbar] = useState({
-    isOpen: false,
-    message: "",
-    severity: null,
-  });
   const [imageFromChild, setImageFromChild] = useState(null);
+
+  const { enqueueSnackbar } = useSnackbar();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (imageFromChild) {
-      const path = `users/${user.uid}/ingredients`;
-      const imgFileName = `${newUid}.${imageFromChild.name.split(".").pop()}`;
-      const imgPath = `${path}/${imgFileName}`;
 
-      await addToStorage(imgPath, imageFromChild).then((url) => {
-        addToFirestore(path, newUid, {
-          ...ingredient,
-          imgPath,
-          imgURL: url,
-          imgFileName,
-          uid: newUid,
-        }).then((obj) => setSnackbar(obj));
+    const path = `users/${user.uid}/ingredients`;
+    const imgFileName = `${newUid}.${imageFromChild?.name.split(".").pop()}`;
+    const imgPath = `${path}/${imgFileName}`;
+
+    // Creates a document in firestore
+    await addToFirestore(path, newUid, {
+      ...ingredient,
+      imgPath: imageFromChild ? imgPath : null,
+      id: newUid,
+    }).then((obj) => {
+      if (obj?.success)
+        enqueueSnackbar("Doc added successfully", { variant: "success" });
+      else
+        enqueueSnackbar(`Error adding doc: ${obj?.error.message}`, {
+          variant: "error",
+        });
+    });
+
+    // Add the image in the imageFromChild to firestorage if theres one
+    if (imageFromChild) {
+      await addToStorage(imgPath, imageFromChild).then((obj) => {
+        if (obj?.success) {
+          addToFirestore(path, newUid, {
+            imgURL: obj.url,
+          }).then((obj) => {
+            if (obj?.success)
+              enqueueSnackbar("File added successfully", {
+                variant: "success",
+              });
+            else
+              enqueueSnackbar(`Error adding file: ${obj?.error.message}`, {
+                variant: "error",
+              });
+          });
+        }
       });
-    } else
-      await addToFirestore(path, newUid, {
-        ...ingredient,
-        imgURL: "",
-      });
+    }
+
     setIngredient(initialValue);
   };
 
   return (
     <ThemeProvider theme={theme}>
-      <CustomSnackbar snackbar={snackbar} setSnackbar={setSnackbar} />
       <Container component="main" maxWidth="xs">
         <CssBaseline />
         <Box

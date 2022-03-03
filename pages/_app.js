@@ -1,22 +1,25 @@
 import "../styles/globals.css";
 import NavBar from "../components/NavBar";
 
-import { UserContext } from "../lib/userContext";
+import { UserState } from "../lib/userContext";
 import { GlobalState } from "../lib/globalState/GlobalState";
-import { useUserData } from "../customHooks/useUserData";
 import CustomSnackbar from "../components/CustomSnackbar";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "../lib/firebase";
+import { SnackbarProvider } from "notistack";
 
-function MyApp({ Component, pageProps }) {
-  const userData = useUserData();
+export default function MyApp({ Component, pageProps }) {
+  const [user, loadingUser, error] = useAuthState(auth);
+
   return (
-    <UserContext.Provider value={userData}>
-      <GlobalState>
-        <CustomSnackbar />
-        <NavBar />
-        <Component {...pageProps} userData={userData} />
-      </GlobalState>
-    </UserContext.Provider>
+    <UserState>
+      <SnackbarProvider maxSnack={3}>
+        <GlobalState>
+          <CustomSnackbar />
+          <NavBar />
+          <Component {...pageProps} userData={{ user, loadingUser, error }} />
+        </GlobalState>
+      </SnackbarProvider>
+    </UserState>
   );
 }
-
-export default MyApp;

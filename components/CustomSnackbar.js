@@ -3,29 +3,32 @@ import { useContext } from "react";
 import { GlobalContext } from "../lib/globalState/globalContext";
 
 export default function CustomSnackbar() {
-  const { state } = useContext(GlobalContext);
+  const { state, disableSnackbar } = useContext(GlobalContext);
   const handleClose = (event, reason) => {
     // Prevent the snackbar to close on click away
     if (reason === "clickaway") {
       return;
     }
-    setSnackbar(false);
+    disableSnackbar();
   };
-  return (
+
+  return state ? (
     <Snackbar
-      open={state.initialCustomSnackbar.isOpen}
+      open={state?.customSnackbarState?.isOpen}
       autoHideDuration={5000}
       onClose={handleClose}
     >
-      {state.initialCustomSnackbar.severity && (
+      {state?.customSnackbarState?.severity && (
         <Alert
           onClose={handleClose}
-          severity={state.initialCustomSnackbar.severity}
+          severity={state?.customSnackbarState?.severity}
           sx={{ width: "100%" }}
         >
-          {state.initialCustomSnackbar.message}
+          {state?.customSnackbarState?.message}
         </Alert>
       )}
     </Snackbar>
+  ) : (
+    <></>
   );
 }

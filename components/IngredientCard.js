@@ -21,19 +21,50 @@ const fabStyle = {
 };
 
 export default function IngredientCard({ ingredient }) {
-  const { loadingUser, user } = useContext(UserContext);
+  const { user, loadingUser } = useContext(UserContext);
   const { state, enableSnackbar } = useContext(GlobalContext);
   const [toggleDeleteBtn, setToggleDeleteBtn] = useState(false);
 
   const handleDelete = async () => {
-    await deleteFromStorage(ingredient.imgPath).then(console.log);
+    // Delete the image from firestorage
+    if (ingredient.imgPath) {
+      await deleteFromStorage(ingredient.imgPath)
+        .then((obj) => {
+          if (obj?.success)
+            enableSnackbar({
+              isOpen: true,
+              message: `Doc deleted sucessfully`,
+              severity: "success",
+            });
+          else
+            enableSnackbar({
+              isOpen: true,
+              message: `Error deleting doc: ${obj?.error.message}`,
+              severity: "error",
+            });
+        });
+    }
+
+    // Delete the document from firestore
+
     await deleteFromFirestore(
       `users/${user.uid}/ingredients`,
-      ingredient.uid
-    ).then((snackbar) => enableSnackbar(snackbar));
+      ingredient.id
+    ).then((obj) => {
+      if (obj?.success)
+        enableSnackbar({
+          isOpen: true,
+          message: `Doc deleted sucessfully`,
+          severity: "success",
+        });
+      else
+        enableSnackbar({
+          isOpen: true,
+          message: `Error deleting doc: ${obj?.error.message}`,
+          severity: "error",
+        });
+    });
   };
-
-  console.log(state);
 
   return (
     <Grid item>
@@ -55,7 +86,7 @@ export default function IngredientCard({ ingredient }) {
         <CardMedia
           component="img"
           height="140"
-          image={ingredient.imgURL}
+          image={ingredient.imgURL ? ingredient.imgURL : "/reptile.jpg"}
           alt="green iguana"
         />
         <CardContent>
